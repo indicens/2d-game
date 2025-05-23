@@ -16,119 +16,168 @@ import javax.imageio.ImageIO;
 import javax.swing.JPanel;
 
 import key_inputs.KeyboardInputs;
-import key_inputs.MouseInputs;
+
 
 import static utils.Constants.PlayerConstants.*;
 import static utils.Constants.Direction.*;
 import sprites.Entity;
 
-
 public class GamePanel extends JPanel {
-	
-	private MouseInputs mouseInputs;
+
+
+
+	// Player position variables
 	private float dx = 100, dy = 100;
+
+	// Frame counter for animation timing
 	private int frames = 0;
 	private long lastCheck;
-	private BufferedImage img;
-	private BufferedImage img2;
-	private BufferedImage img3;
-	private BufferedImage img4;
-	private BufferedImage[] idleAni;
-	private BufferedImage[] LidleAni;
-	private BufferedImage[] runAni;
-	private BufferedImage[] LrunAni;
-	private BufferedImage[] Anim;
+
+	// Sprite Sheets for different animations
+	private BufferedImage img, img2, img3, img4;
+
+	// Platforms and Background
+	private BufferedImage backgroundImgDay;
+	private BufferedImage backgroundImgNight;
+	private BufferedImage platform1Img;
+	private BufferedImage KillBox;
+
+	// Animation frames for different states
+	private BufferedImage[] idleAni, LidleAni, runAni, LrunAni, Anim;
+
+	// Animation timing variables
 	private int aniTick, aniIndex, aniSpeed = 30;
+
+	// Constants to determine player action/state
 	private int playerAction = IDLE;
 	private int playerDir = -1;
 	private boolean moving = false;
+
+	// Player's entity and level data
 	private Entity playerEntity;
 	private int[][] lvlData;
+
+	// Platforms and obstacles (used with collision detection)
 	private List<Rectangle> platforms = new ArrayList<>();
-	private Rectangle testObstacle = new Rectangle(50, 200, 500, 50);
+	private List<Rectangle> deadlyObstacles = new ArrayList<>();
+	private List<Rectangle> coins = new ArrayList<>();
+
+	private int coinsCollected = 0;
+
+	// Gravity & physics-related variables
 	private float velocityY = 0;
 	private final float gravity = 0.4f;
 	private final float maxFallSpeed = 10f;
-	private boolean onGround = false;
-	private boolean inAir = false;
-	private boolean wantsToJump = false;
-	private List<Rectangle> coins = new ArrayList<>();
-	private int coinsCollected = 0;
+
+	// State booleans for player status
+	private boolean onGround = false, inAir = false, wantsToJump = false;
+
+	// Game state
 	private boolean gameWon = false;
 	private boolean gameOver = false;
-	private List<Rectangle> deadlyObstacles = new ArrayList<>();
 
-	
+	/**
+	 * GamePanel.java Author: Sino
+	 *
+	 * This class represents the main game panel where all rendering and game logic
+	 * occur. It handles player movement, animation, physics (gravity, collision),
+	 * input (keyboard & mouse), and game state (win/loss). Utilizes Java Swing for
+	 * GUI rendering.
+	 *
+	 * Meets the following requirements: - Declare and use variables for data
+	 * persistence within a program. - Invoke methods on an object, with parameters
+	 * and a returned value. - Write a method, with parameters and a returned value.
+	 * - Use single dimensional arrays to store and access data. - Use loops: while,
+	 * for, and nested loops. - Use the Scanner class or an appropriate GUI widget
+	 * to interact with the user via keyboard input. - Use conditional execution
+	 * (if-else). - Write and use a custom class. - Construct programs utilizing
+	 * graphical user interfaces utilizing event-driven programming. - Construct
+	 * programs utilizing exception handling.
+	 */
 
-	
-	
+	/**
+	 * Constructor initializes the game, sets up platforms, coins, images, input,
+	 * and player entity.
+	 */
+
 	public GamePanel() {
-		
-		
-		platforms.add(new Rectangle(50, 200, 500, 50));   // Platform 1
-		platforms.add(new Rectangle(300, 400, 300, 40));  // Platform 2
-		platforms.add(new Rectangle(700, 300, 200, 30));  // Platform 3
+
+		// Platforms & coins setup (array/list usage requirement)
+		platforms.add(new Rectangle(50, 200, 500, 50)); // Platform 1
+		platforms.add(new Rectangle(300, 400, 300, 40)); // Platform 2
+		platforms.add(new Rectangle(700, 300, 200, 30)); // Platform 3
 		coins.add(new Rectangle(150, 150, 20, 20)); // Coin 1
 		coins.add(new Rectangle(400, 180, 20, 20)); // Coin 2
 		deadlyObstacles.add(new Rectangle(600, 500, 100, 20)); // Trap 1
 		deadlyObstacles.add(new Rectangle(600, 250, 100, 20)); // Trap 2
 
-		mouseInputs = new MouseInputs();
-		
-		importImg();
+
+
+		importImg(); // Loads image files (exception handling requirement)
 		loadAnimations();
-		
+
+		// Keyboard input setup
 		addKeyListener(new KeyboardInputs(this));
 		setFocusable(true);
 		requestFocusInWindow();
 		setPanelSize();
 		addMouseListener(null);
-		addMouseMotionListener(mouseInputs);
-		playerEntity = new Entity(dx, dy, 32, 64);  // Width and height can match sprite
-		
+		playerEntity = new Entity(dx, dy, 32, 64); // Creates Player Entity, Custom class requirement
+
 	}
-	
+
+	/**
+	 * Loads animation frames from sprite sheets.
+	 */
+
 	private void loadAnimations() {
 		// TODO Auto-generated method stub
 		idleAni = new BufferedImage[1];
 		runAni = new BufferedImage[3];
 		LrunAni = new BufferedImage[3];
 		LidleAni = new BufferedImage[1];
-		
-		 for (int i = 0; i < idleAni.length; i++) {
-		        idleAni[i] = img.getSubimage(i * 16, 0, 16, 32);
-		    }
 
-		    for (int i2 = 0; i2 < runAni.length; i2++) {
-		        runAni[i2] = img2.getSubimage(i2 * 16, 0, 16, 32);
-		    }
+		idleAni[0] = img.getSubimage(0 * 16, 0, 16, 32);
+		LidleAni[0] = img4.getSubimage(0 * 16, 0, 16, 32);
 
-		    for (int i3 = 0; i3 < LrunAni.length; i3++) {
-		        LrunAni[i3] = img3.getSubimage(i3 * 16, 0, 16, 32);
-		    }
-
-		    for (int i4 = 0; i4 < LidleAni.length; i4++) {
-		        LidleAni[i4] = img4.getSubimage(i4 * 16, 0, 16, 32);
-		    }
+		for (int i2 = 0; i2 < runAni.length; i2++) {
+			runAni[i2] = img2.getSubimage(i2 * 16, 0, 16, 32);
 		}
-	 
+
+		for (int i3 = 0; i3 < LrunAni.length; i3++) {
+			LrunAni[i3] = img3.getSubimage(i3 * 16, 0, 16, 32);
+		}
+
+	}
+
+	/**
+	 * Imports player images from resource files using ImageIO.
+	 */
 
 	private void importImg() {
-		
-		
+
+		InputStream platform1Stream = getClass().getResourceAsStream("/platform1.png");
+		InputStream KillBoxStream = getClass().getResourceAsStream("/KillBox.png");
+		InputStream bgStreamDay = getClass().getResourceAsStream("/Background_Day.png");
+		InputStream bgStreamNight = getClass().getResourceAsStream("/Background_Night.png");
 		InputStream is = getClass().getResourceAsStream("/Player-run-Sheet.png");
 		InputStream is2 = getClass().getResourceAsStream("/Player-Sheet.png");
 		InputStream is3 = getClass().getResourceAsStream("/Player-run-left-Sheet.png");
 		InputStream is4 = getClass().getResourceAsStream("/Player-Sheet-Left.png");
+
 		if (is == null) {
 			System.out.println("Could not find image");
-			}
+		}
 		try {
 			img = ImageIO.read(is);
 			img2 = ImageIO.read(is2);
 			img3 = ImageIO.read(is3);
 			img4 = ImageIO.read(is4);
-			
+			backgroundImgDay = ImageIO.read(bgStreamDay);
+			backgroundImgNight = ImageIO.read(bgStreamNight);
+			platform1Img = ImageIO.read(platform1Stream);
+			KillBox = ImageIO.read(KillBoxStream);
+
 		} catch (IOException e) {
 			// TODO Auto-generated catch block
 			e.printStackTrace();
@@ -139,287 +188,339 @@ public class GamePanel extends JPanel {
 				e.printStackTrace();
 			}
 		}
-		
+
 	}
-	
+
+	/**
+	 * Sets the preferred panel size for the game window.
+	 */
 	private void setPanelSize() {
 		Dimension size = new Dimension(1280, 720);
 		setPreferredSize(size);
-		
+
 	}
-	
+
 	public void setDirection(int direction) {
 		this.playerDir = direction;
 	}
-	
+
 	public void setMoving(boolean moving) {
 		this.moving = moving;
 	}
-	
-	
+
+	/**
+	 * Sets the animation array and action type based on movement and player state.
+	 */
 	private void setAnimation() {
-		if(moving) {
+
+		if (inAir) {
+			// Freeze on first idle frame during jump
+			Anim = (playerDir == LEFT) ? LidleAni : idleAni;
+			aniIndex = 0; // Always use the first frame
+			System.out.println("In Air - Using idle animation with " + Anim.length + " frames.");
+			return;
+		}
+		if (moving) {
 			playerAction = RUNNING;
-			if(playerDir == LEFT) {
+			if (playerDir == LEFT) {
 				Anim = LrunAni;
 			} else {
 				Anim = runAni;
 			}
-			
+
 		} else {
 			playerAction = IDLE;
-			if(playerDir == LEFT) {
+			if (playerDir == LEFT) {
 				Anim = LidleAni;
 			} else {
 				Anim = idleAni;
 			}
-			
+
 		}
 	}
-	
-	
+
+	/**
+	 * Updates the player's position based on movement direction, gravity, and
+	 * collisions. Also handles coin collection, death conditions, and win state.
+	 */
+
 	private void updatePos() {
-	    float moveSpeed = 4f;
+		float moveSpeed = 4f;
 
-	    // Horizontal movement (always allowed)
-	    if (moving) {
-	        switch (playerDir) {
-	            case LEFT: dx -= moveSpeed; break;
-	            case RIGHT: dx += moveSpeed; break;
-	        }
-	    }
+		// Horizontal movement (always allowed)
+		if (moving) {
+			switch (playerDir) {
+			case LEFT:
+				dx -= moveSpeed;
+				break;
+			case RIGHT:
+				dx += moveSpeed;
+				break;
+			}
+		}
 
-	    // Apply gravity
-	    if (!onGround) {
-	        velocityY += gravity;
-	        if (velocityY > maxFallSpeed) velocityY = maxFallSpeed;
-	    }
+		// Apply gravity
+		if (!onGround) {
+			velocityY += gravity;
+			if (velocityY > maxFallSpeed)
+				velocityY = maxFallSpeed;
+		}
 
-	    // Predict vertical movement
-	    float nextY = dy + velocityY;
+		// Predict vertical movement
+		float nextY = dy + velocityY;
 
-	    // Check vertical collision
-	    Rectangle futureHitbox = new Rectangle((int) dx, (int) nextY, playerEntity.gethitbox().width, playerEntity.gethitbox().height);
+		// Check vertical collision
+		Rectangle futureHitbox = new Rectangle((int) dx, (int) nextY, playerEntity.gethitbox().width,
+				playerEntity.gethitbox().height);
 
-	    boolean collided = false;
+		boolean collided = false;
 
-	    for (Rectangle platform : platforms) {
-	        if (futureHitbox.intersects(platform)) {
-	            if (velocityY > 0) {
-	                // Falling - land on platform
-	                dy = platform.y - playerEntity.gethitbox().height;
-	                onGround = true;
-	                inAir = false;
-	            } else if (velocityY < 0) {
-	                // Jumping up - hit head on bottom of platform
-	                dy = platform.y + platform.height;
-	            }
+		for (Rectangle platform : platforms) {
+			if (futureHitbox.intersects(platform)) {
+				if (velocityY > 0) {
+					// Falling - land on platform
+					dy = platform.y - playerEntity.gethitbox().height;
+					onGround = true;
+					inAir = false;
+				} else if (velocityY < 0) {
+					// Jumping up - hit head on bottom of platform
+					dy = platform.y + platform.height;
+				}
 
-	            velocityY = 0;
-	            collided = true;
-	            break;
-	        }
-	    }
+				velocityY = 0;
+				collided = true;
+				break;
+			}
+		}
 
-	    if (!collided) {
-	        onGround = false;
-	        dy += velocityY;
-	    }
+		if (!collided) {
+			onGround = false;
+			dy += velocityY;
+		}
 
-	    dy += velocityY; // or inside the "if (!collided)" block
-	    playerEntity.setPos(dx, dy);
-	    playerEntity.updateHitbox();
+		dy += velocityY; // or inside the "if (!collided)" block
+		playerEntity.setPos(dx, dy);
+		playerEntity.updateHitbox();
 
-	    // Check if standing on ground using feet collider
-	    onGround = isOnGround();
-	    
-	    System.out.println("[updatePos()] onGround: " + onGround + ", wantsToJump: " + wantsToJump);
-	    
-	    if (wantsToJump && onGround) {
-	    	System.out.println("[updatePos()] Jump executed");
-	        velocityY = -8f;
-	        onGround = false;
-	        inAir = true;
-	        wantsToJump = false;
-	    } else {
-	        wantsToJump = false;
-	    }
-	    
-	    coins.removeIf(coin -> {
-	        if (playerEntity.gethitbox().intersects(coin)) {
-	            coinsCollected++;
-	            return true;
-	        }
-	        return false;
-	    });
-	    
-	    if (coins.isEmpty() && !gameWon) {
-	        gameWon = true;
-	        System.out.println("You win!");
+		// Check if standing on ground using feet collider
+		onGround = isOnGround();
 
-	    }
-	    if (!gameOver && dy > 720) {
-	        gameOver = true;
-	        System.out.println("You died!");
+		System.out.println("[updatePos()] onGround: " + onGround + ", wantsToJump: " + wantsToJump);
 
-	        // Start timer to close app after 3 seconds
-	        new javax.swing.Timer(2000, e -> {
-	            System.exit(0);
-	        }).start();
-	    }
-	    for (Rectangle obstacle : deadlyObstacles) {
-	        if (playerEntity.gethitbox().intersects(obstacle)) {
-	            if (!gameOver) {
-	                gameOver = true;
-	                System.out.println("You touched a deadly obstacle. You died!");
-	                new javax.swing.Timer(1500, e -> System.exit(0)).start();
-	            }
-	        }
-	    }
+		if (wantsToJump && onGround) {
+			System.out.println("[updatePos()] Jump executed");
+			velocityY = -8f;
+			onGround = false;
+			inAir = true;
+			wantsToJump = false;
+		} else {
+			wantsToJump = false;
+		}
 
+		coins.removeIf(coin -> {
+			if (playerEntity.gethitbox().intersects(coin)) {
+				coinsCollected++;
+				return true;
+			}
+			return false;
+		});
+
+		if (coins.isEmpty() && !gameWon) {
+			gameWon = true;
+			System.out.println("You win!");
+
+		}
+		if (!gameOver && dy > 720) {
+			gameOver = true;
+			System.out.println("You died!");
+
+			// Start timer to close app after 3 seconds
+			new javax.swing.Timer(2000, e -> {
+				System.exit(0);
+			}).start();
+		}
+		for (Rectangle obstacle : deadlyObstacles) {
+			if (playerEntity.gethitbox().intersects(obstacle)) {
+				if (!gameOver) {
+					gameOver = true;
+					System.out.println("You touched a deadly obstacle. You died!");
+					new javax.swing.Timer(1500, e -> System.exit(0)).start();
+				}
+			}
+		}
 
 	}
-	      
-	        
-	
-	private Rectangle floor = new Rectangle(50, 200, 500, 50); // Example ground
 
-	
+	/**
+	 * Checks if the player would collide with any platform at a given position.
+	 *
+	 * @param newX   New X-coordinate
+	 * @param newY   New Y-coordinate
+	 * @param hitbox The player's current hitbox
+	 * @return true if collision would occur, false otherwise
+	 */
+
 	public boolean isColliding(float newX, float newY, Rectangle hitbox) {
-	    Rectangle moved = new Rectangle((int) newX, (int) newY, hitbox.width, hitbox.height);
-	    for (Rectangle platform : platforms) {
-	        if (moved.intersects(platform)) {
-	            return true;
-	        }
-	    }
-	    return false;
+		Rectangle moved = new Rectangle((int) newX, (int) newY, hitbox.width, hitbox.height);
+		for (Rectangle platform : platforms) {
+			if (moved.intersects(platform)) {
+				return true;
+			}
+		}
+		return false;
 	}
-	
-	private boolean checkCollision(Rectangle a, Rectangle b) {
-	    return a.intersects(b);
-	    
-	}
-	
-	
+
+	/**
+	 * Checks if the player is currently standing on a platform using a small hitbox
+	 * below the feet.
+	 *
+	 * @return true if the player is on the ground
+	 */
+
 	private boolean isOnGround() {
-	    Rectangle playerHitbox = playerEntity.gethitbox();
-	    Rectangle feet = new Rectangle(playerHitbox.x, playerHitbox.y + playerHitbox.height, playerHitbox.width, 2); // 2px under feet
+		Rectangle playerHitbox = playerEntity.gethitbox();
+		Rectangle feet = new Rectangle(playerHitbox.x, playerHitbox.y + playerHitbox.height, playerHitbox.width, 2); // 2px
+																														// under
+																														// feet
 
-	    for (Rectangle platform : platforms) {
-	        if (feet.intersects(platform)) {
-	            return true;
-	        }
-	    }
+		for (Rectangle platform : platforms) {
+			if (feet.intersects(platform)) {
+				return true;
+			}
+		}
 
-	    return false;
+		return false;
 	}
 
-	
+	/**
+	 * Calculates the corrected Y-position for the player when colliding with a
+	 * platform.
+	 *
+	 * @return The corrected Y-coordinate to place the player on top of a platform
+	 */
+
 	public float getCorrectedY() {
-		 Rectangle playerHitbox = playerEntity.gethitbox();
-		    for (Rectangle platform : platforms) {
-		        Rectangle test = new Rectangle((int) dx, (int) (dy + velocityY), playerHitbox.width, playerHitbox.height);
-		        if (test.intersects(platform)) {
-		            return platform.y - playerHitbox.height;
-		        }
-		    }
-		    return dy; // fallback
-    }
-	
-
-	
-	public void LoadlvlData(int[][] lvlData) {
-		this.lvlData = lvlData; 
+		Rectangle playerHitbox = playerEntity.gethitbox();
+		for (Rectangle platform : platforms) {
+			Rectangle test = new Rectangle((int) dx, (int) (dy + velocityY), playerHitbox.width, playerHitbox.height);
+			if (test.intersects(platform)) {
+				return platform.y - playerHitbox.height;
+			}
+		}
+		return dy; // fallback
 	}
-	
+
+	/**
+	 * Paints the current game state, including background, platforms, coins, and
+	 * the player.
+	 *
+	 * @param g The Graphics object to draw to
+	 */
 	public void paintComponent(Graphics g) {
-		
-		if(playerAction == RUNNING) {
-			if(playerDir == LEFT) {
+		// Clear Previous Frame
+		super.paintComponent(g);
+
+		// Draw Background
+		if (coinsCollected > 1) {
+			g.drawImage(backgroundImgNight, 0, 0, getWidth(), getHeight(), null);
+		} else {
+			g.drawImage(backgroundImgDay, 0, 0, getWidth(), getHeight(), null);
+		}
+
+		// Set Running Animation depending on direction
+		if (playerAction == RUNNING) {
+			if (playerDir == LEFT) {
 				Anim = LrunAni;
 			} else {
 				Anim = runAni;
 			}
 		} else {
-			if(playerAction == IDLE) {
-				if(playerDir == LEFT) {
+			if (playerAction == IDLE) {
+				if (playerDir == LEFT) {
 					Anim = LidleAni;
 				} else {
 					Anim = idleAni;
 				}
-				
+
 			}
 		}
-		
-		
+
+		// Draw game elements
 		setAnimation();
 		updatePos();
 		playerEntity.setPos(dx, dy);
 		playerEntity.updateHitbox();
-		
-		super.paintComponent(g);
-		
 		updateAnimationTick();
-		
-		
-		// subImg = img.getSubimage(1*16, 0*32, 16, 32);
-		g.drawImage(Anim[aniIndex], (int)dx, (int)dy, 32, 64, null);
-		for (Rectangle platform : platforms) {
-		    g.fillRect(platform.x, platform.y, platform.width, platform.height);
-		   
+
+		// Draw Animation
+		g.drawImage(Anim[aniIndex], (int) dx, (int) dy, 32, 64, null);
+		if (platform1Img != null) {
+			for (Rectangle platform : platforms) {
+				g.drawImage(platform1Img, platform.x, platform.y, platform.width, platform.height, null);
+			}
 		}
 		g.setColor(Color.RED);
 		for (Rectangle obstacle : deadlyObstacles) {
-		    g.fillRect(obstacle.x, obstacle.y, obstacle.width, obstacle.height);
+			g.drawImage(KillBox, obstacle.x, obstacle.y, obstacle.width, obstacle.height, null);
 		}
-		playerEntity.drawHitbox(g);
-		
+		// Used for Debugging
+		// playerEntity.drawHitbox(g);
+
 		// Draw coins (only if game not won)
 		if (!gameWon) {
-		    g.setColor(Color.YELLOW);
-		    for (Rectangle coin : coins) {
-		        g.fillOval(coin.x, coin.y, coin.width, coin.height);
-		    }
+			for (Rectangle coin : coins) {
+				g.setColor(Color.YELLOW);
+				g.fillOval(coin.x, coin.y, coin.width, coin.height);
+			}
 		}
 
-		// Always check for win message
+		// Check if the Game has been Won or Lost
 		if (gameWon) {
-		    g.setColor(Color.GREEN);
-		    g.drawString("You collected all the coins! You win!", 500, 100);
+			g.setColor(Color.GREEN);
+			g.drawString("You collected all the coins! You win!", 500, 100);
 		}
 		if (gameOver) {
-		    g.setColor(Color.RED);
-		    g.drawString("You Died! Exiting", 500, 100);
-		}
-		    
-		    }
-		
-		
-		
-	
-	
-	public void jump() {
-		  wantsToJump = true;
-		  System.out.println("[jump()] Jump requested");
-	    }
-	
 
+			g.setColor(Color.RED);
+			g.drawString("You Died! Exiting", 500, 300);
+		}
+
+	}
+
+	/**
+	 * Requests a jump action from the player. The actual jump occurs in the next
+	 * update cycle if the player is on the ground.
+	 */
+	public void jump() {
+		wantsToJump = true;
+		System.out.println("[jump()] Jump requested");
+	}
+
+	/**
+	 * Updates the animation frame index based on time ticks. Freezes animation
+	 * while in air.
+	 */
 	private void updateAnimationTick() {
 		// TODO Auto-generated method stub
+		if (inAir) {
+			// Freeze animation index on 0 when in air
+			aniIndex = 0;
+			aniTick = 0;
+			return;
+		}
+
 		if (Anim.length <= 1) {
-	        aniIndex = 0;
-	        return;
-	    }
+			aniIndex = 0;
+			return;
+		}
 		aniTick++;
-		if(aniTick >= aniSpeed) {
+		if (aniTick >= aniSpeed) {
 			aniTick = 0;
 			aniIndex++;
-			if(aniIndex >= Anim.length) {
+			if (aniIndex >= Anim.length) {
 				aniIndex = 0;
 			}
 		}
 	}
-	
 
-		
 }
