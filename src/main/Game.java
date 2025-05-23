@@ -1,11 +1,15 @@
 package main;
 
+import java.awt.Graphics;
+
+import levels.LevelHandler;
 
 public class Game implements Runnable {
 	
 	private GameWindow gameWindow;
 	private GamePanel gamePanel;
 	private Thread gameThread;
+	private LevelHandler LevelHandler;
 	private final int FPS_SET = 120;
 	private final int UPS_SET = 200;
 	private long lastCheck;
@@ -16,18 +20,24 @@ public class Game implements Runnable {
 		gamePanel = new GamePanel();
 		gameWindow = new GameWindow(gamePanel);
 		gamePanel.requestFocus();
+		LevelHandler = new LevelHandler(this);
 		run();
-		// startGameLoop();
 		
 	}
 	
 	private void startGameLoop() {
 		gameThread = new Thread(this);
 		gameThread.start();
+		
 	}
 	
 	public void update() {
 		gamePanel.update(null);
+		
+	}
+	
+	public void render(Graphics g) {
+		LevelHandler.draw(g);
 	}
 	
 	
@@ -44,6 +54,7 @@ public class Game implements Runnable {
 		long lastCheck = System.currentTimeMillis();
 		double dU = 0;
 		double dF = 0;
+		
 		
 		
 		
